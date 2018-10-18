@@ -15,7 +15,7 @@ from scipy import ndimage
 from scipy import misc
 
 
-# In[300]:
+# In[258]:
 
 
 #the function changes the shape (a,b,c)->(c,b,a)
@@ -41,7 +41,7 @@ def change_shape(array):
 # scaling points from orinal picture to layer matrix
 #input 
 
-def scaling_point_picture_to_layer(picture, layer_matrix, x, y):
+def scaling_point_picture_to_layer(picture, layer_matrix, x, y, g = 5):
     """scaling points from orinal picture to layer matrix
     Input:
     picture array
@@ -50,23 +50,45 @@ def scaling_point_picture_to_layer(picture, layer_matrix, x, y):
     Returns the scaled x,y point
     """
     original_shape = picture.shape
-    print("original_shape", original_shape)
+    #print("original_shape:                 ", original_shape)
     layer_shape    = layer_matrix.shape
-    print("layer_shape # 1st 3rd switched", layer_shape)
+    #print("layer_shape # 1st 3rd switched:  ", layer_shape[0])
     
     width_scale = original_shape[0]/layer_shape[2]
-    print("width_scale",width_scale)
+    #print("width_scale",width_scale)
     hight_scale = original_shape[1]/layer_shape[1]
-    print("hight_scale",hight_scale)
-    xs = int(x / w)
-    ys = int(y / h)
-    print("x,y",x,y)
-    print("new x,y",xs,ys)
+    #print("hight_scale",hight_scale)
+    xs = int(x / width_scale)
+    ys = int(y / hight_scale)
     
-    return xs,ys
+    #scaled grade
+    gx = int(g / width_scale)
+    gy = int(g / hight_scale)
+    #print("Layershape:                    ", layer_matrix.shape)
+    #print("width_scale,hight_scale        ", width_scale,width_scale)
+    
+    #print("x,y                            ",x,y)
+    #print("scaled x,y                     ",xs,ys)
+    
+    #print("g                              ",g)
+    #print("gx gy                          ", gx,gy)
+
+    #print("one Pixcel information shape",layer_matrix[0,xs-gx:xs+gx+1,ys-gy:ys+gy+1].shape)
+    
+    #print("information x,y \n",layer_matrix[2000,xs-gx:xs+gx+1,ys-gy:ys+gy+1])
+    
+    #print("The mean of the area",layer_matrix[2000,xs-gx:xs+gx+1,ys-gy:ys+gy+1].mean())
+    
+    solutions = []
+    for i in range(layer_shape[0]):
+        solutions.append(layer_matrix[i,xs-gx:xs+gx+1,ys-gy:ys+gy+1].mean())
+    
+    
+    #print("type",type(solutions))
+    return solutions
 
 
-# In[2]:
+# In[9]:
 
 
 #load the inception file 
@@ -82,7 +104,7 @@ print("Image Count: ",image_count)
 print("Layer Count: ",layer_count)
 
 
-# In[192]:
+# In[10]:
 
 
 picture_layers = []
@@ -108,7 +130,7 @@ for i in range(image_count):
 feat_dict.keys()
 
 
-# In[253]:
+# In[178]:
 
 
 print(np.transpose(picture_layers[0][0][1,5:7,0:3]))
@@ -117,17 +139,17 @@ print(np.transpose(picture_layers[0][0][1,5:7,0:3]))
 print(picture_layers[0][0].shape)
 
 
-# In[302]:
+# In[294]:
 
 
 data = plt.imread("pic_test/3.png")
 layer_shape = picture_layers[0][0].shape
 
-print("layer",layer_shape[2])
-print("whole picture : ",data.shape[1])
+#print("layer",layer_shape[2])
+#print("whole picture : ",data.shape[1])
 
 snipe = data[data.shape[0]-layer_shape[2]:data.shape[0],data.shape[1]-layer_shape[1]:data.shape[1]]
-print("snipe         : ",snipe.shape)
+#print("snipe         : ",snipe.shape)
 
 data = plt.imread("pic_test/3.png")
 
@@ -135,15 +157,32 @@ data = plt.imread("pic_test/3.png")
 x = 1000
 y = 700
 
-new_points = scaling_point_picture_to_layer(data, picture_layers[0][0],x,y)
-print(new_points)
+def get_spatial_activation(data,picture_layers,g = 0, vec = []):
+    list_of_activations = []
+    #scale the points
+    #return the feature layer activation at the point x,y 
+    for i in range(image_count):
+        activations = []
+        for u in range(len(vec)):
+            new_points = []
+            temp = []
+            for z in range(11):
+                temp += scaling_point_picture_to_layer(data, picture_layers[i][z],vec[u][0],vec[u][1], g)
+                #print(type(temp))
+            activations.append(temp)
+        list_of_activations.append(activations)
+    n =np.array(list_of_activations)
+    print(n.shape)
+    
+    print(len(vec))
+    return n
 
-#picture_layers[0][0][0][new_points[0]][new_points[1]]
+blicke = np.array([[500,100],[400,200],[300,250],[300,250],[300,250],[300,250]])
+
+pictures_with_activations = get_spatial_activation(data,picture_layers,10, blicke)
 
 
-
-
-# In[303]:
+# In[163]:
 
 
 #Example of scaling
@@ -152,7 +191,7 @@ plt.imshow(eye)
 plt.show()
 
 
-# In[304]:
+# In[14]:
 
 
 #for scaling purpose we take little part of the picture
@@ -161,7 +200,7 @@ plt.imshow(snipe)
 plt.show()
 
 
-# In[306]:
+# In[15]:
 
 
 #whole picture
